@@ -1,0 +1,149 @@
+<DOCTYPE>
+<!/DOCTYPE>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Animal Visualization</title>
+    <meta name="viewport">  
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 24px;
+      color: #203040;
+    }
+
+    svg {
+      border: 1px solid #c7d2dc;
+      background: #f8fbfd;
+    }
+
+    .axis-label {
+      font-size: 14px;
+      fill: #203040;
+    }
+
+    .title {
+      font-size: 20px;
+      font-weight: bold;
+      fill: #203040;
+    }
+  </style>
+</head>
+<body>
+  <svg id="chart" width="850" height="560"></svg>
+
+
+  .selectAll(long)
+  <script type="module">
+    import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+
+    const animals = [
+      { name: "Mouse", habitat: "Land", lifespan: 2, weight: 0.03, population: 100 },
+      { name: "Rabbit", habitat: "Land", lifespan: 9, weight: 2, population: 70 },
+      { name: "Dog", habitat: "Land", lifespan: 13, weight: 25, population: 60 },
+      { name: "Elephant", habitat: "Land", lifespan: 65, weight: 5000, population: 10 },
+      { name: "Dolphin", habitat: "Ocean", lifespan: 45, weight: 150, population: 35 },
+      { name: "Blue Whale", habitat: "Ocean", lifespan: 90, weight: 140000, population: 5 },
+      { name: "Eagle", habitat: "Air", lifespan: 20, weight: 5, population: 25 },
+      { name: "Penguin", habitat: "Ocean", lifespan: 20, weight: 15, population: 40 }
+    ];
+
+    const width = 850;
+    const height = 560;
+    const margin = { top: 55, right: 35, bottom: 75, left: 85 };
+
+    const svg = d3.select("#chart");
+    const plotWidth = width - margin.left - margin.right;
+    const plotHeight = height - margin.top - margin.bottom;
+
+    const xScale = d3.scaleLinear()
+      .domain([0, d3.max(animals, d => d.lifespan)])
+      .nice()
+      .range([margin.left, width - margin.right]);
+
+    const yScale = d3.scaleLog()
+      .domain([0.01, d3.max(animals, d => d.weight)])
+      .range([height - margin.bottom, margin.top]);
+
+    const colorScale = d3.scaleOrdinal()
+      .domain(["Land", "Ocean", "Air"])
+      .range(["#e07a5f", "#277da1", "#6a994e"]);
+    
+    
+
+    svg.append("text")
+      .attr("class", "title")
+      .attr("x", width / 2)
+      .attr("y", 30)
+      .attr("text-anchor", "middle")
+      .text("Animal Lifespan and Body Weight");
+
+    svg.append("g")
+      .attr("transform", `translate(0, ${height - margin.bottom})`)
+      .call(d3.axisBottom(xScale));
+
+    svg.append("g")
+      .attr("transform", `translate(${margin.left}, 0)`)
+      .call(d3.axisLeft(yScale).ticks(6, "~s"));
+
+    svg.append("text")
+      .attr("class", "axis-label")
+      .attr("x", margin.left + plotWidth / 2)
+      .attr("y", height - 25)
+      .attr("text-anchor", "middle")
+      .text("Lifespan (years)");
+
+    svg.append("text")
+      .attr("class", "axis-label")
+      .attr("transform", "rotate(-90)")
+      .attr("x", -(margin.top + plotHeight / 2))
+      .attr("y", 20)
+      .attr("text-anchor", "middle")
+      .text("Body weight (kg, logarithmic scale)");
+
+    svg.selectAll("circle")
+      .data(animals)
+      .join("circle")
+      .attr("cx", d => xScale(d.lifespan))
+      .attr("cy", d => yScale(d.weight))
+      .attr("r", d => 5 + d.population / 15)
+      .attr("fill", d => colorScale(d.habitat))
+      .attr("stroke", "#203040")
+      .attr("stroke-width", 1)
+      .attr("opacity", 0.8)
+      .on("mouseover", function(event, data) {
+        console.log(data)
+        d3.select("tooltip")
+            .attr("text", data.name)
+            .attr("transform", `translate(${d3.select(this).attr('cx')}, ${d3.select(this).attr('cy')})`)
+      })
+      .append("title")
+      .text(d => `${d.name}: ${d.lifespan} years, ${d.weight} kg, ${d.habitat}`)
+      
+      svg.append("text")
+      .attr("class", "tooltip")
+      .attr("text", "Hello-world")
+      .attr("fill", "black")
+      .attr("dx", 50)
+      .attr("dy", 50)
+      .attr("font-size", 48)
+      .attr("font-family", 'Helvetica')
+
+
+    const legend = svg.append("g")
+      .attr("transform", `translate(${width - 150}, ${margin.top})`);
+
+    
+
+    ["Land", "Ocean", "Air"].forEach((habitat, index) => {
+      const row = legend.append("g").attr("transform", `translate(0, ${index * 24})`);
+      row.append("circle")
+        .attr("r", 7)
+        .attr("fill", colorScale(habitat));
+      row.append("text")
+        .attr("x", 14)
+        .attr("y", 5)
+        .text(habitat);
+    });
+  </script>
+</body>
+</html>
