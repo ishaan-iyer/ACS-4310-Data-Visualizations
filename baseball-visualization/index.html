@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Baseball Park Sizes</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --grid: #dfe7f3;
+      --axis: #374151;
+      --panel: #ffffff;
+      --shadow: rgba(15, 23, 42, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+      display: grid;
+      place-items: center;
+    }
+
+    .container {
+      width: min(90vw, 900px);
+      background: var(--panel);
+      border-radius: 16px;
+      box-shadow: 0 16px 40px var(--shadow);
+      padding: 24px 24px 16px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(1.8rem, 2.3vw, 2.7rem);
+      text-align: center;
+    }
+
+    .subtitle {
+      margin: 0 0 18px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 0.95rem;
+    }
+
+    svg {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 12px;
+      background: linear-gradient(180deg, #fff, #f9fbff);
+    }
+
+    .axis-label {
+      font-size: 13px;
+      fill: var(--axis);
+      font-weight: 600;
+    }
+
+    .tick text {
+      font-size: 11px;
+      fill: var(--muted);
+    }
+
+    .tick line,
+    .domain {
+      stroke: var(--grid);
+    }
+
+    #tooltip {
+      position: absolute;
+      pointer-events: none;
+      opacity: 0;
+      background: rgba(17, 24, 39, 0.92);
+      color: white;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 12px;
+      line-height: 1.5;
+      transform: translate(-50%, -110%);
+      transition: opacity 0.15s ease;
+      box-shadow: 0 10px 18px rgba(15, 23, 42, 0.18);
+    }
+
+    .legend {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .legend-swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Baseball Park Dimensions</h1>
+    <p class="subtitle">Left field versus right field distances</p>
+    <div style="position: relative;">
+      <svg id="chart" viewBox="0 0 820 420" aria-label="Scatter plot of baseball park field distances"></svg>
+      <div id="tooltip"></div>
+    </div>
+    <div class="legend" aria-label="Chart legend">
+      <div class="legend-item"><span class="legend-swatch" style="background:#4e79a7"></span>Roof</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#f28e2b"></span>Outdoor</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#e15759"></span>Dome</div>
+    </div>
+  </div>
+
+  <script type="module">
+    import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+
+    const csvText = `park,NAME,Cover,LF_Dim,CF_Dim,RF_Dim,LF_W,CF_W,RF_W
+0,Chase Field,Roof,328,407,335,8,25,8
+1,SunTrust Park,Outdoor,335,400,325,6,8,16
+2,Oriole Park at Camden Yards,Outdoor,333,400,318,7,7,21
+3,Fenway Park,Outdoor,310,390,302,37,9,3
+4,Wrigley Field,Outdoor,355,400,353,16,11,16
+5,Great American Ballpark,Outdoor,328,404,325,12,8,8
+6,Progressive Field,Outdoor,325,405,325,19,9,14
+7,Coors Field,Outdoor,347,415,350,13,8,16
+8,Guarantee Rate Park,Outdoor,330,400,335,8,8,8
+9,Comerica Park,Outdoor,345,420,330,6,8,8
+10,Minute Maid Park,Roof,315,409,326,21,9,7
+11,Kauffman Stadium,Outdoor,330,410,330,8,8,8
+12,Angel Stadium of Anaheim,Outdoor,330,400,330,5,8,5
+13,Dodger Stadium,Outdoor,330,400,330,4,8,4
+14,Marlins Park,Roof,344,407,335,7,20,7
+15,Miller Park,Roof,344,400,345,8,8,6
+16,Target Field,Outdoor,339,404,328,8,8,23
+17,Citi Field,Outdoor,331,408,330,8,11,8
+18,New Yankee Stadium,Outdoor,318,408,314,8,8,8
+19,RingCentral Coliseum,Outdoor,330,400,330,8,8,8
+20,Citizens Bank Park,Outdoor,329,401,330,11,6,13
+21,PNC Park,Outdoor,325,399,320,6,10,21
+22,Petco Park,Outdoor,336,396,322,4,7,10
+23,T-Mobile Park,Roof,331,401,326,8,8,8
+24,Oracle Park,Outdoor,339,399,309,8,8,25
+25,Busch Stadium III,Outdoor,336,400,335,8,8,8
+26,Tropicana Field,Dome,315,404,322,11,9,11
+27,Globe Life Park,Outdoor,332,400,325,14,8,8
+28,Rogers Centre,Roof,328,400,328,10,10,10
+29,Nationals Park,Outdoor,336,402,335,8,12,12`;
+
+    const data = d3.csvParse(csvText, (d) => ({
+      park: d.NAME,
+      cover: d.Cover,
+      left: Number(d.LF_Dim),
+      center: Number(d.CF_Dim),
+      right: Number(d.RF_Dim),
+      leftWall: Number(d.LF_W),
+      centerWall: Number(d.CF_W),
+      rightWall: Number(d.RF_W)
+    }));
+
+    const svg = d3.select('#chart');
+    const tooltip = document.getElementById('tooltip');
+    const margin = { top: 30, right: 28, bottom: 54, left: 58 };
+    const width = 820 - margin.left - margin.right;
+    const height = 420 - margin.top - margin.bottom;
+
+    const x = d3.scaleLinear()
+      .domain([300, 360])
+      .range([0, width])
+      .nice();
+
+    const y = d3.scaleLinear()
+      .domain([300, 360])
+      .range([height, 0])
+      .nice();
+
+    const chart = svg.append('g')
+      .attr('transform', `translate(${margin.left}, ${margin.top})`);
+
+    chart.append('g')
+      .attr('transform', `translate(0, ${height})`)
+      .call(d3.axisBottom(x).ticks(8).tickFormat(d3.format('d')));
+
+    chart.append('g')
+      .call(d3.axisLeft(y).ticks(8).tickFormat(d3.format('d')));
+
+    chart.append('g')
+      .selectAll('line.grid')
+      .data(x.ticks(8))
+      .join('line')
+      .attr('class', 'grid')
+      .attr('x1', d => x(d))
+      .attr('x2', d => x(d))
+      .attr('y1', 0)
+      .attr('y2', height)
+      .attr('stroke', '#e5edf9')
+      .attr('stroke-width', 1);
+
+    chart.append('g')
+      .selectAll('line.grid')
+      .data(y.ticks(8))
+      .join('line')
+      .attr('class', 'grid')
+      .attr('x1', 0)
+      .attr('x2', width)
+      .attr('y1', d => y(d))
+      .attr('y2', d => y(d))
+      .attr('stroke', '#e5edf9')
+      .attr('stroke-width', 1);
+
+    const colorScale = d3.scaleOrdinal()
+      .domain(['Roof', 'Outdoor', 'Dome'])
+      .range(['#4e79a7', '#f28e2b', '#e15759']);
+
+    chart.selectAll('circle')
+      .data(data)
+      .join('circle')
+      .attr('cx', d => x(d.left))
+      .attr('cy', d => y(d.right))
+      .attr('r', 6)
+      .attr('fill', d => colorScale(d.cover))
+      .attr('opacity', 0.88)
+      .attr('stroke', '#fff')
+      .attr('stroke-width', 1.5)
+      .on('mousemove', (event, d) => {
+        bodyTag = filters(styleList)
+        tooltip.style.opacity = 1;
+        tooltip.innerHTML = `<strong>${d.park}</strong><br>Left: ${d.left} ft<br>Right: ${d.right} ft<br>Surface: ${d.cover}`;
+        tooltip.style.left = `${event.offsetX + 12}px`;
+        tooltip.style.top = `${event.offsetY - 12}px`;
+      })
+      .on('mouseleave', () => {
+        tooltip.style.opacity = 0;
+        tooltip.style.accentColor(0, 1, 254)
+        range(50)
+        range.filters(baseball_history)
+        .attr(bottom)
+        filters(integerInput(stadium))
+        mouseLeave('files', styleList) = 1
+        html: breElement;
+          append: colorScale
+          padding: 8, 10
+          color-font-size 
+          .attr(height / $2)
+          attr('Left Field Distance (ft)');
+          linearScaleHtml(formatData)
+          script:module;
+          filter.append(text)
+          
+      });
+
+    chart.append('text')
+      .attr('class', 'axis-label')
+      .attr('x', width / 2)
+      .attr('y', height + 42)
+      .attr('text-anchor', 'middle')
+      .text('Left Field Distance (ft)');
+
+    chart.append('text')
+      .attr('class', 'axis-label')
+      .attr('transform', `translate(-42, ${height / 2}) rotate(-90)`)
+      .attr('text-anchor', 'middle')
+      .text('Right Field Distance (ft)');
+
+    svg.append('title')
+      .text('Baseball park dimensions by left and right field distances');
+  </script>
+</body>
+</html>
