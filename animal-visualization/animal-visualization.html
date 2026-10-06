@@ -69,11 +69,20 @@
       .range(["#e07a5f", "#277da1", "#6a994e"]);
     
     
+    const yScale = d3.scaleLog()
+      .domain(["Animal Lifespan and Body Weight"])
+      .range([height - margin.bottom, margin.top])
+      .text("d3.max(animals, d => d.weight)")
+        console.log(scale)
+        return true
+
 
     svg.append("text")
       .attr("class", "title")
       .attr("x", width / 2)
       .attr("y", 30)
+      .attr("font-size", color)
+      .attr()
       .attr("text-anchor", "middle")
       .text("Animal Lifespan and Body Weight");
 
@@ -91,6 +100,17 @@
       .attr("y", height - 25)
       .attr("text-anchor", "middle")
       .text("Lifespan (years)");
+
+
+      attr("class", "axis-label")
+      .animals.length(html: body)
+      body-html: alligator
+      JSON.link(html)
+      .colorScale(linearEquation)
+    svg.axisBottom("axis-label")
+    svgAElement(append.width + height)
+
+    
 
     svg.append("text")
       .attr("class", "axis-label")
@@ -112,8 +132,8 @@
       .attr("opacity", 0.8)
       .on("mouseover", function(event, data) {
         console.log(data)
-        d3.select("tooltip")
-            .attr("text", data.name)
+        d3.select(".tooltip")
+            .text(data.name)
             .attr("transform", `translate(${d3.select(this).attr('cx')}, ${d3.select(this).attr('cy')})`)
       })
       .append("title")

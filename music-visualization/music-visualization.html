@@ -1,84 +1,177 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Music Visualization</title>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Spotify: Energy and Danceability</title>
+	<style>
+		:root {
+			color-scheme: light;
+			font-family: "Avenir Next", Avenir, "Segoe UI", sans-serif;
+			color: #192723;
+			background: #f2f4ee;
+		}
+		* { box-sizing: border-box; }
+		body {
+			min-width: 320px;
+			margin: 0;
+			padding: 32px 24px;
+			background: linear-gradient(135deg, #f2f4ee 0%, #e8f0e9 100%);
+		}
+		main { width: min(100%, 1040px); margin: 0 auto; }
+		header {
+			display: flex;
+			align-items: end;
+			justify-content: space-between;
+			gap: 20px;
+			margin: 4px 0 18px;
+		}
+		.eyebrow {
+			margin: 0 0 8px;
+			color: #557166;
+			font-size: 12px;
+			font-weight: 700;
+			letter-spacing: 1.2px;
+			text-transform: uppercase;
+		}
+		h1 {
+			margin: 0;
+			font-size: clamp(25px, 5vw, 38px);
+			font-weight: 650;
+			line-height: 1.12;
+		}
+		#status {
+			margin: 0 0 3px;
+			color: #557166;
+			font-size: 14px;
+			text-align: right;
+		}
+		.chart-wrap {
+			overflow: hidden;
+			border: 1px solid #d8dfd8;
+			background: rgba(255, 255, 255, 0.78);
+		}
+		svg {
+			display: block;
+			width: 100%;
+			height: auto;
+			min-height: 280px;
+		}
+		.grid line { stroke: #e2e8e2; }
+		.grid path { display: none; }
+		.axis path, .axis line { stroke: #9aa9a0; }
+		.axis text { fill: #586961; font-size: 12px; }
+		.axis-label {
+			fill: #273a32;
+			font-size: 14px;
+			font-weight: 600;
+		}
+		.point {
+			fill: #e05a3f;
+			fill-opacity: 0.62;
+			stroke: #fff;
+			stroke-width: 0.65px;
+		}
+		.point:hover {
+			fill: #b63d2a;
+			fill-opacity: 1;
+			stroke-width: 1.5px;
+		}
+		@media (max-width: 560px) {
+			body { padding: 24px 12px; }
+			header { align-items: start; flex-direction: column; gap: 10px; }
+			#status { text-align: left; }
+			.axis text { font-size: 10px; }
+		}
+	</style>
 </head>
 <body>
-<svg id="svg" width="800" height="500"></svg>
+	<main>
+		<header>
+			<div>
+				<p class="eyebrow">Spotify track features</p>
+				<h1>Energy vs. danceability</h1>
+			</div>
+			<p id="status" aria-live="polite">Loading tracks...</p>
+		</header>
+		<div class="chart-wrap">
+			<svg id="chart" viewBox="0 0 960 580" role="img" aria-label="Scatterplot comparing track energy and danceability"></svg>
+		</div>
+	</main>
 
-<script type="module">
+	<script type="module">
+		import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 
-import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+		const svg = d3.select("#chart");
+		const status = d3.select("#status");
+		const width = 960;
+		const height = 580;
+		const margin = { top: 28, right: 34, bottom: 72, left: 76 };
+		const innerWidth = width - margin.left - margin.right;
+		const innerHeight = height - margin.top - margin.bottom;
+		const plot = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
 
-const svg = d3.select("#svg")
-  .style("border", "1px solid black")
-  .style("background", "#f9f9f9");
+		const xScale = d3.scaleLinear().domain([0, 1]).range([0, innerWidth]);
+		const yScale = d3.scaleLinear().domain([0, 1]).range([innerHeight, 0]);
 
-d3.csv("./high_popularity_spotify_data.csv")
-.then(data => {
-    const energyAndDanceability = data.map(track => ({
-        energy: +track.energy,
-        danceability: +track.danceability,
-        title: track.track_name || "Unknown track"
-    }));
+		plot.append("g")
+			.attr("class", "grid")
+			.call(d3.axisLeft(yScale).ticks(6).tickSize(-innerWidth).tickFormat(""));
 
-    const margin = { top: 40, right: 30, bottom: 60, left: 70 };
-    const width = 800 - margin.left - margin.right;
-    const height = 500 - margin.top - margin.bottom;
+		plot.append("g")
+			.attr("class", "axis")
+			.attr("transform", `translate(0,${innerHeight})`)
+			.call(d3.axisBottom(xScale).ticks(6).tickFormat(d3.format(".0%")));
 
-    const xScale = d3.scaleLinear()
-      .domain([0, 1])
-      .range([margin.left, margin.left + width]);
+		plot.append("g")
+			.attr("class", "axis")
+			.call(d3.axisLeft(yScale).ticks(6).tickFormat(d3.format(".0%")));
 
-    const yScale = d3.scaleLinear()
-      .domain([0, 1])
-      .range([margin.top + height, margin.top]);
+		svg.append("text")
+			.attr("class", "axis-label")
+			.attr("x", margin.left + innerWidth / 2)
+			.attr("y", height - 18)
+			.attr("text-anchor", "middle")
+			.text("Danceability");
 
-    svg.append("g")
-      .attr("transform", `translate(0,${margin.top + height})`)
-      .call(d3.axisBottom(xScale).ticks(6).tickFormat(d3.format(".0%")));
+		svg.append("text")
+			.attr("class", "axis-label")
+			.attr("transform", "rotate(-90)")
+			.attr("x", -(margin.top + innerHeight / 2))
+			.attr("y", 22)
+			.attr("text-anchor", "middle")
+			.text("Energy");
 
-    svg.append("g")
-      .attr("transform", `translate(${margin.left},0)`)
-      .call(d3.axisLeft(yScale).ticks(6).tickFormat(d3.format(".0%")));
+		try {
+			const tracks = await d3.csv("./high_popularity_spotify_data.csv", row => ({
+				title: row.track_name || "Unknown track",
+				artist: row.track_artist || "Unknown artist",
+				energy: Number(row.energy),
+				danceability: Number(row.danceability)
+			}));
 
-    svg.append("text")
-      .attr("x", margin.left + width / 2)
-      .attr("y", 490)
-      .attr("text-anchor", "middle")
-      .text("Danceability");
+			const validTracks = tracks.filter(track =>
+				Number.isFinite(track.energy) &&
+				Number.isFinite(track.danceability) &&
+				track.energy >= 0 && track.energy <= 1 &&
+				track.danceability >= 0 && track.danceability <= 1
+			);
 
-    svg.append("text")
-      .attr("transform", "rotate(-90)")
-      .attr("x", -(margin.top + height / 2))
-      .attr("y", 18)
-      .attr("text-anchor", "middle")
-      .text("Energy");
+			plot.selectAll("circle")
+				.data(validTracks)
+				.join("circle")
+				.attr("class", "point")
+				.attr("cx", track => xScale(track.danceability))
+				.attr("cy", track => yScale(track.energy))
+				.attr("r", 4)
+				.append("title")
+				.text(track => `${track.title} - ${track.artist}\nDanceability: ${d3.format(".0%")(track.danceability)}\nEnergy: ${d3.format(".0%")(track.energy)}`);
 
-    svg.selectAll("circle")
-      .data(energyAndDanceability)
-      .enter()
-      .append("circle")
-      .attr("cx", d => xScale(d.danceability))
-      .attr("cy", d => yScale(d.energy))
-      .attr("r", 5)
-      .attr("fill", "#d62728")
-      .attr("opacity", 0.75)
-      .append("title")
-      .text(d => `${d.title}: Energy ${d.energy}, Danceability ${d.danceability}`);
-
-    svg.append("text")
-      .attr("x", margin.left + width / 2)
-      .attr("y", 25)
-      .attr("text-anchor", "middle")
-      .style("font-size", "16px")
-      .style("font-weight", "bold")
-      .text("Energy vs Danceability");
-})
-
-</script>
-
+			status.text(`${validTracks.length.toLocaleString()} tracks`);
+		} catch (error) {
+			console.error("Could not load Spotify data:", error);
+			status.text("Could not load the CSV. Open this page through a local web server.");
+		}
+	</script>
 </body>
 </html>
